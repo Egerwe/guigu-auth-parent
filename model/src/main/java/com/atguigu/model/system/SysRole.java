@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.atguigu.model.base.BaseEntity;
 import lombok.Data;
 
+import java.util.Date;
+
 
 @Data
 @TableName("sys_role")

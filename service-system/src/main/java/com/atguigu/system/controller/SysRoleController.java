@@ -2,11 +2,11 @@ package com.atguigu.system.controller;
 
 import com.atguigu.common.result.Result;
 import com.atguigu.model.system.SysRole;
+import com.atguigu.model.vo.AssginRoleVo;
 import com.atguigu.model.vo.SysRoleQueryVo;
 import com.atguigu.system.exception.GuiguException;
 import com.atguigu.system.service.SysRoleService;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.api.R;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Author Yjw
@@ -27,6 +28,18 @@ public class SysRoleController {
     @Resource
     private SysRoleService sysRoleService;
 
+    @ApiOperation("获取用户的角色数据")
+    @GetMapping("/toAssign/{userId}")
+    public Result toAssign(@PathVariable String userId) {
+        Map<String, Object> roleMap = sysRoleService.getRolesByUserId(userId);
+        return Result.ok(roleMap);
+    }
+    @ApiOperation("用户分配角色")
+    @PostMapping("/doAssign")
+    public Result doAssign(@RequestBody AssginRoleVo assginRoleVo) {
+        sysRoleService.doAssign(assginRoleVo);
+        return Result.ok();
+    }
     //7 批量删除---------------------------------------------------------------------
     @ApiOperation("批量删除")
     @DeleteMapping("/batchRemove")
@@ -108,4 +121,5 @@ public class SysRoleController {
         List<SysRole> list = sysRoleService.list();
         return Result.ok(list);
     }
+
 }
