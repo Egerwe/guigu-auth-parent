@@ -3,11 +3,13 @@ package com.atguigu.system.service.impl;
 import com.atguigu.model.system.SysMenu;
 import com.atguigu.model.system.SysRoleMenu;
 import com.atguigu.model.vo.AssginMenuVo;
+import com.atguigu.model.vo.RouterVo;
 import com.atguigu.system.exception.GuiguException;
 import com.atguigu.system.mapper.SysMenuMapper;
 import com.atguigu.system.mapper.SysRoleMenuMapper;
 import com.atguigu.system.service.SysMenuService;
 import com.atguigu.system.utils.MenuHelper;
+import com.atguigu.system.utils.RouterHelper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.stereotype.Service;
@@ -105,5 +107,50 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuMapper, SysMenu> impl
             sysRoleMenuMapper.insert(sysRoleMenu);
         }
         //
+    }
+
+    //根据 userid 查询菜单权限值
+    @Override
+    public List<RouterVo> getUserMenuList(String userId) {
+
+        //admin 是超级管理员，操作所有内容
+        List<SysMenu> sysMenuList = null;
+        //判断 userid 值是 1 代表超级管理员，查询所有权限数据
+        if ("1".equals(userId)) {
+            QueryWrapper<SysMenu> wrapper = new QueryWrapper<>();
+            wrapper.eq("status", 1);
+            wrapper.orderByAsc("sort_value");
+            sysMenuList = baseMapper.selectList(wrapper);
+        } else {
+            //如果 userid 不是 1 是其他用户权限，查询这个用户权限
+            sysMenuList = baseMapper.findMenuListUserId(userId);
+        }
+
+        //构建树形结构
+        List<SysMenu> sysMenuTreeList = MenuHelper.buildTree(sysMenuList);
+        //转换成前端路由要求的格式数据
+        List<RouterVo> routerVoList = RouterHelper.buildRouters(sysMenuTreeList);
+        return routerVoList;
+    }
+
+    //根据 userid 查询按钮权限值
+    @Override
+    public List<String> getUserButtonList(String userId) {
+
+        List<SysMenu> sysMenuList = null;
+        if ("1".equals(userId)) {
+            sysMenuList =
+                    baseMapper.selectList(new QueryWrapper<SysMenu>().eq("status", 1));
+        } else {
+            sysMenuList = baseMapper.findMenuListUserId(userId);
+        }
+        List<String> permissionList = new ArrayList<>();
+        for (SysMenu sysMenu: sysMenuList) {
+            if (sysMenu.getType() == 2) {
+                String perms = sysMenu.getPerms();
+                permissionList.add(perms);
+            }
+        }
+        return permissionList;
     }
 }
