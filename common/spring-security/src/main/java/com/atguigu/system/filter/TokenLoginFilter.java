@@ -7,6 +7,8 @@ import com.atguigu.common.utils.JwtHelper;
 import com.atguigu.common.utils.ResponseUtil;
 import com.atguigu.model.vo.LoginVo;
 import com.atguigu.system.custom.CustomUser;
+import com.atguigu.system.service.LoginLogService;
+import com.atguigu.system.utils.IpUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -16,7 +18,6 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
-import javax.annotation.Resource;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -31,15 +32,19 @@ import java.util.Map;
  */
 public class TokenLoginFilter extends UsernamePasswordAuthenticationFilter {
 
-    @Resource
     private RedisTemplate redisTemplate;
 
-    public TokenLoginFilter(AuthenticationManager authenticationManager, RedisTemplate redisTemplate) {
+    private LoginLogService loginLogService;
+
+    public TokenLoginFilter(AuthenticationManager authenticationManager,
+                            RedisTemplate redisTemplate,
+                            LoginLogService loginLogService) {
         this.setAuthenticationManager(authenticationManager);
         this.setPostOnly(false);
         //指定登录接口及提交方式，可以指定任意路径
         this.setRequiresAuthenticationRequestMatcher(new AntPathRequestMatcher("/admin/system/index/login","POST"));
         this.redisTemplate = redisTemplate;
+        this.loginLogService = loginLogService;
     }
     /**
      * 登录认证
@@ -78,6 +83,10 @@ public class TokenLoginFilter extends UsernamePasswordAuthenticationFilter {
         //保存权限数据
         redisTemplate.opsForValue().set(customUser.getUsername(), JSON.toJSONString(customUser.getAuthorities()));
         String token = JwtHelper.createToken(customUser.getSysUser().getId(), customUser.getSysUser().getUsername());
+
+        //记录登录日志
+        loginLogService.recordLoginLog(customUser.getUsername(), 1,
+                IpUtil.getIpAddress(request), "登录成功");
 
         Map<String, Object> map = new HashMap<>();
         map.put("token", token);
